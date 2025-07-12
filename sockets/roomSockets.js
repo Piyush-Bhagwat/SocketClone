@@ -1,3 +1,4 @@
+const { Users } = require("../services/player.service");
 const { Rooms } = require("../services/rooms.service");
 
 function handleRoomSockets(io, socket) {
@@ -13,7 +14,6 @@ function handleRoomSockets(io, socket) {
     })
 
     socket.on("join_room", async ({ name, roomId }) => {
-        //TODO: add users to global array
 
         const room = Rooms.joinRoom(socket.id, name, roomId);
 
@@ -47,4 +47,20 @@ function handleRoomSockets(io, socket) {
         io.to(roomId).emit("update_messages", room.messages);
     })
 
+    socket.on("disconnect", () => {
+        const user = Users.getUser(socket.id);
+        const room = Rooms.getRoom(user.roomId);
+
+        if (room) {
+            Rooms.removePlayer(socket.id, room.roomId);
+            io.to(room.roomId).emit("updatePlayers", room.players);
+            room.addSystemMessage(`${user.name} left the room!`);
+            io.to(room.roomId).emit("update_messages", room.messages);
+        }
+
+        Users.removeUser(socket.id);
+    });
+
 }
+
+module.exports = {handleRoomSockets}

@@ -1,6 +1,7 @@
 const { nanoid } = require("nanoid");
 const Player = require("../model/player");
 const Room = require("../model/room");
+const { Users } = require("./player.service");
 
 /**
  * Collection of all the rooms and functions to handle them
@@ -24,10 +25,10 @@ class Rooms {
      * @returns {*} room
      */
     async createRoom(socketId, name, maxPlayers, rounds) {
-        users[socketId] = name;
         log("User created:", name, socketId);
 
         const roomId = nanoid(5).toUpperCase();
+        Users.createUser(socketId, roomId, name);
 
         const admin = new Player(socketId, name, "admin");
         this.rooms[roomId] = new Room(roomId, admin, maxPlayers, rounds);
@@ -45,7 +46,8 @@ class Rooms {
      * @returns {*} room | false
      */
     async joinRoom(socketId, name, roomId) {
-        users[socketId] = name;
+        Users.createUser(socketId, roomId, name);
+
         log("User created:", name, socketId);
 
         const room = this.rooms[roomId];

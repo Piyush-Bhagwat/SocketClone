@@ -93,7 +93,7 @@ class Room {
                 type = "hidden";
             }
 
-            if (message.text.trim().toLowerCase() == this.word.trim().toLowerCase() && player.gameRole != "drawer" && !this.curRoundRank.includes(socketId)) {
+            if (text.trim().toLowerCase() == this.word.trim().toLowerCase() && player.gameRole != "drawer" && !this.curRoundRank.includes(socketId)) {
                 this.curRoundRank.push(socketId);
                 guessed = true;
             }
