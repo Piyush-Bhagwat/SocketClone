@@ -1,0 +1,18 @@
+{
+  "name": "scribble",
+  "version": "1.0.0",
+  "description": "Scribble backnd",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Piyush Bhagwat",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "nanoid": "^5.1.5",
+    "socket.io": "^4.8.1",
+    "socketio": "^1.0.0"
+  }
+}
