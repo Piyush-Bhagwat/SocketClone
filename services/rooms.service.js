@@ -24,8 +24,8 @@ class Rooms {
      * @param {*} rounds 
      * @returns {*} room
      */
-    async createRoom(socketId, name, maxPlayers, rounds) {
-        log("User created:", name, socketId);
+    createRoom(socketId, name, maxPlayers, rounds) {
+        console.log("User created:", name, socketId);
 
         const roomId = nanoid(5).toUpperCase();
         Users.createUser(socketId, roomId, name);
@@ -33,8 +33,6 @@ class Rooms {
         const admin = new Player(socketId, name, "admin");
         this.rooms[roomId] = new Room(roomId, admin, maxPlayers, rounds);
 
-        log("Room created: ", roomId);
-        log("Rooms: ", this.rooms);
         return this.rooms[roomId];
     }
 
@@ -45,10 +43,10 @@ class Rooms {
      * @param {*} roomId 
      * @returns {*} room | false
      */
-    async joinRoom(socketId, name, roomId) {
+    joinRoom(socketId, name, roomId) {
         Users.createUser(socketId, roomId, name);
 
-        log("User created:", name, socketId);
+        console.log("User created:", name, socketId);
 
         const room = this.rooms[roomId];
         if (!room) {
@@ -61,7 +59,7 @@ class Rooms {
             return false;
         }
 
-        log("player: ", name, "joined:", roomId);
+        console.log("player: ", name, "joined:", roomId);
         return room;
     }
 

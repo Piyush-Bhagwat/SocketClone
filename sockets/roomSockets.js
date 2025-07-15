@@ -5,8 +5,7 @@ function handleRoomSockets(io, socket) {
     socket.on("create_room", async ({ name, maxPlayers, rounds }) => {
         const room = Rooms.createRoom(socket.id, name, maxPlayers, rounds);
 
-        log("Room created: ", room.roomId);
-        log("Rooms: ", Rooms.rooms);
+        console.log("Room created: ", room.roomId);
         await socket.join(room.roomId);
         socket.emit("room_created", { roomId: room.roomId, id: socket.id });
         socket.emit("updatePlayers", room.players);

@@ -23,16 +23,20 @@ async function runGameLoop(io, socket, room) {
             room.word = null;
             io.to(room.roomId).emit("clean_canvas");
 
-            await wait(p.id, 2)
             const drawerSocket = io.sockets.sockets.get(p.id);
+            await wait(drawerSocket, 2)
 
             if (!drawerSocket) {
                 io.to(roomId).emit("drawer_disconnected", { drawer: p.id });
                 continue; // Skip to next player
             }
 
+            drawerSocket.removeAllListeners('drawing');
+            drawerSocket.on('drawing', ({ from, to, roomId }) => {
+                drawerSocket.to(roomId).emit("draw_stroke", { from, to });
+            });
 
-            await selectDrawer(io, room, p);
+            await selectDrawer(io, room, p, drawerSocket);
             if (!room.word) {
                 continue;
             }
@@ -40,9 +44,10 @@ async function runGameLoop(io, socket, room) {
             const finished = await drawingPhase(io, room, p, drawerSocket);
 
             if (finished) {
-                await broadcastScores()
-                await wait(p.id, 8); //final wait to see the scores
+                await broadcastScores(io, room)
+                await wait(drawerSocket, 8); //final wait to see the scores
 
+                p.gameRole = "guesser"
             }
 
             io.to(roomId).emit("turn_over");
@@ -59,7 +64,7 @@ async function runGameLoop(io, socket, room) {
  * @param {*} room 
  * @param {*} player 
  */
-async function selectDrawer(io, room, player) {
+async function selectDrawer(io, room, player, drawerSocket) {
     player.gameRole = 'drawer';
     const drawer = player.id
     io.to(room.roomId).emit("drawer_selected", drawer);
@@ -69,7 +74,7 @@ async function selectDrawer(io, room, player) {
 
     io.to(drawer).emit("choose_word", wordsOptions);
 
-    const word = await waitForWord(drawer, 10, (time) => {
+    const word = await waitForWord(drawerSocket, 10, (time) => {
         io.to(room.roomId).emit("tick", time);
     });
 
@@ -97,12 +102,11 @@ async function drawingPhase(io, room, drawer, drawerSocket) {
     io.to(roomId).emit("draw_start", drawer.id);
 
     drawerSocket.on("canvas_update", onCanvasUpdate);
-    drawerSocket.on("disconnect", onDrawerDisconnect);
-    
-    const finished = await wait(drawer, 30, (time) => {
+    drawerSocket.once("disconnect", onDrawerDisconnect);
+
+    const finished = await wait(drawerSocket, 30, (time) => {
         io.to(roomId).emit("tick", time);
     });
-
 
     drawerSocket.off("disconnect", onDrawerDisconnect);
     drawerSocket.off("canvas_update", onCanvasUpdate);
@@ -117,30 +121,44 @@ async function drawingPhase(io, room, drawer, drawerSocket) {
 async function broadcastScores(io, room) {
     const round = room.curRound;
     const roundScores = [];
-    room.players.map(p => {
-        const ranks = room.curRoundRank;
-        let score = 0;
-        if (ranks.includes(p.id)) {
-            score = (room.players.length * 100) - (round * 100);
-        }
-        roundScores.push({ id: p.id, score })
+    console.log("curTurnScore: ", room.curRoundRank);
+
+    room.curRoundRank.map((r, i) => {
+        roundScores.push({ id: r, score: (room.players.length * 100) - (i * 100) })
     })
-    roundScores.sort((a, b) => a.score - b.score);
+
+    room.players.forEach(p => {
+        if (!room.curRoundRank.includes(p.id)) {
+            roundScores.push({ id: p.id, score: 0 });
+        }
+    });
+    roundScores.sort((a, b) => b.score - a.score);
 
     roundScores.map((rc, i) => {
         const player = room.getPlayer(rc.id);
         player.score += rc.score;
     })
+    
     io.to(room.roomId).emit("updatePlayers", room.players);
     io.to(room.roomId).emit("scores", roundScores)
 }
 
 
-async function waitForWord(drawer, seconds, tickCallback) {
+async function waitForWord(drawerSocket, seconds, tickCallback) {
     return new Promise((resolve) => {
-        const drawerSocket = io.sockets.sockets.get(drawer);
-        drawerSocket.once("disconnect", onDisconnect);
+        const onWordChosen = (word) => {
+            clearInterval(interval);
+            clearTimeout(timeout);
+            resolve(word);
+        };
 
+        const onDisconnect = () => {
+            clearInterval(interval);
+            clearTimeout(timeout);
+            resolve(null);
+        };
+
+        drawerSocket.once("disconnect", onDisconnect);
         if (!drawerSocket) {
             resolve(null);
             return;
@@ -159,25 +177,17 @@ async function waitForWord(drawer, seconds, tickCallback) {
             resolve(null);
         }, seconds * 1000);
 
-        const onWordChosen = (word) => {
-            clearInterval(interval);
-            clearTimeout(timeout);
-            resolve(word);
-        };
 
-        const onDisconnect = () => {
-            clearInterval(interval);
-            clearTimeout(timeout);
-            resolve(null);
-        };
 
         drawerSocket.once("word_chosen", onWordChosen);
+        drawerSocket.off("disconnect", onDisconnect)
     });
 }
 
-async function wait(drawer, seconds, tickCallback) {
+async function wait(drawerSocket, seconds, tickCallback) {
+
+
     return new Promise((resolve) => {
-        const drawerSocket = io.sockets.sockets.get(drawer);
         if (!drawerSocket) {
             resolve(false); // drawer disconnected
             return;
@@ -209,7 +219,8 @@ async function wait(drawer, seconds, tickCallback) {
         };
 
         drawerSocket.once("disconnect", onDisconnect);
+        drawerSocket.off("disconnect", onDisconnect)
     });
 }
 
-module.exports = {handleGameSockets}
+module.exports = { handleGameSockets }

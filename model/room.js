@@ -46,6 +46,9 @@ class Room {
     startGame() {
         this.curRound = 1;
         this.state = "playing"
+        for(const p of this.players){
+            p.gameRole = "guesser"
+        }
     }
 
     resetGame() {
@@ -54,10 +57,10 @@ class Room {
         this.word = null;
         this.curRoundRank = [];
 
-        this.players.map(p => {
+        for(const p of this.players){
             p.score = 0
             p.gameState = 'waiting'
-        });
+        }
     }
 
     /**
@@ -93,7 +96,7 @@ class Room {
                 type = "hidden";
             }
 
-            if (text.trim().toLowerCase() == this.word.trim().toLowerCase() && player.gameRole != "drawer" && !this.curRoundRank.includes(socketId)) {
+            if (text.trim().toLowerCase() == this.word.trim().toLowerCase() && player.gameRole == "guesser" && !this.curRoundRank.includes(socketId)) {
                 this.curRoundRank.push(socketId);
                 guessed = true;
             }
