@@ -3,3 +3,28 @@
 .env
 */.env
 */.env.local
+*/node_modules
+/client
+
+
+# Root-level ignore
+node_modules/
+.env
+.env.local
+
+# Client and Server
+client/node_modules/
+client/.env
+client/.env.local
+
+server/node_modules/
+server/.env
+server/.env.local
+
+# Logs
+logs/
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db

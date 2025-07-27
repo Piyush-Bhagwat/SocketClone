@@ -99,6 +99,7 @@ class Room {
             if (text.trim().toLowerCase() == this.word.trim().toLowerCase() && player.gameRole == "guesser" && !this.curRoundRank.includes(socketId)) {
                 this.curRoundRank.push(socketId);
                 guessed = true;
+                type = "answer";
             }
         }
         

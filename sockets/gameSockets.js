@@ -7,6 +7,9 @@ function handleGameSockets(io, socket) {
 
         room.startGame();
         io.to(roomId).emit("game_started", { round: 1 });
+        room.addSystemMessage("Game Started!");
+        socket.emit("update_messages", room.messages)
+
 
         runGameLoop(io, socket, room);
     })
@@ -16,6 +19,10 @@ async function runGameLoop(io, socket, room) {
     const roomId = room.roomId;
     for (let i = 1; i <= room.rounds; i++) {
         io.to(roomId).emit("round_start", { round: i, state: "started" });
+        room.addSystemMessage(`Round ${i} Started!`);
+        socket.emit("update_messages", room.messages)
+
+
         room.curRound = i;
 
         for (const p of room.players) {
@@ -68,6 +75,8 @@ async function selectDrawer(io, room, player, drawerSocket) {
     player.gameRole = 'drawer';
     const drawer = player.id
     io.to(room.roomId).emit("drawer_selected", drawer);
+    room.addSystemMessage(`${player.name} is choosing word`);
+    io.to(room.roomId).emit("update_messages", room.messages)
 
 
     const wordsOptions = getWordsOptions();
@@ -83,6 +92,8 @@ async function selectDrawer(io, room, player, drawerSocket) {
     }
     room.word = word;
     io.to(room.roomId).emit("word_selected", word);
+    room.addSystemMessage(`Word selected!`);
+    io.to(room.roomId).emit("update_messages", room.messages);
 }
 
 async function drawingPhase(io, room, drawer, drawerSocket) {
@@ -138,7 +149,7 @@ async function broadcastScores(io, room) {
         const player = room.getPlayer(rc.id);
         player.score += rc.score;
     })
-    
+
     io.to(room.roomId).emit("updatePlayers", room.players);
     io.to(room.roomId).emit("scores", roundScores)
 }
