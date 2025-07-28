@@ -32,6 +32,8 @@ class Rooms {
 
         const admin = new Player(socketId, name, "admin");
         this.rooms[roomId] = new Room(roomId, admin, maxPlayers, rounds);
+        console.log("Rooms: ", this.rooms);
+        
 
         return this.rooms[roomId];
     }
@@ -44,15 +46,13 @@ class Rooms {
      * @returns {*} room | false
      */
     joinRoom(socketId, name, roomId) {
-        Users.createUser(socketId, roomId, name);
-
-        console.log("User created:", name, socketId);
-
         const room = this.rooms[roomId];
         if (!room) {
             return false;
         }
-
+        
+        Users.createUser(socketId, roomId, name);
+        console.log("User created:", name, socketId);
         const player = new Player(socketId, name, "player")
         const added = room.addPlayer(player);
         if (!added) {

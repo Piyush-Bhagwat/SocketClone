@@ -26,6 +26,12 @@ io.on("connection", (socket) => {
 
 });
 
+app.get("/wake-server", (req, res)=>{
+    console.log("Server Pinged");
+    
+    res.send("OK");
+})
+
 
 server.listen(PORT, () => {
     console.log('====================================');

@@ -15,9 +15,11 @@ function handleRoomSockets(io, socket) {
     socket.on("join_room", async ({ name, roomId }) => {
 
         const room = Rooms.joinRoom(socket.id, name, roomId);
-
+        console.log(name, roomId);
+    
         if (!room) {
             socket.emit("room_full");
+            console.log("cant join room", roomId)
             return;
         }
 
@@ -47,17 +49,21 @@ function handleRoomSockets(io, socket) {
     })
 
     socket.on("disconnect", () => {
-        const user = Users.getUser(socket.id);
-        const room = Rooms.getRoom(user.roomId);
+        try{
+            const user = Users.getUser(socket.id);
+            const room = Rooms.getRoom(user.roomId);
+    
+            if (room) {
+                Rooms.removePlayer(socket.id, room.roomId);
+                io.to(room.roomId).emit("updatePlayers", room.players);
+                room.addSystemMessage(`${user.name} left the room!`);
+                io.to(room.roomId).emit("update_messages", room.messages);
+            }
 
-        if (room) {
-            Rooms.removePlayer(socket.id, room.roomId);
-            io.to(room.roomId).emit("updatePlayers", room.players);
-            room.addSystemMessage(`${user.name} left the room!`);
-            io.to(room.roomId).emit("update_messages", room.messages);
+            Users.removeUser(socket.id);
+        }catch(e){
+            console.log("Cant disconnecct", e);
         }
-
-        Users.removeUser(socket.id);
     });
 
 }
